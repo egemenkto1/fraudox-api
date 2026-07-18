@@ -53,7 +53,7 @@ func main() {
 	rateLimiter := handler.NewRateLimiter()
 
 	mux := http.NewServeMux()
-	secureHandler := handler.RapidAPIAuthMiddleware(rateLimiter.Middleware(analyzeHandler))
+	secureHandler := handler.GatewayAuthMiddleware(rateLimiter.Middleware(analyzeHandler))
 	mux.Handle("/api/v1/analyze", secureHandler)
 	mux.HandleFunc("/healthz", healthCheckHandler)
 
