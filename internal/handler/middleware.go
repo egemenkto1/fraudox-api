@@ -5,23 +5,30 @@ import (
 	"os"
 )
 
-// RapidAPIAuthMiddleware, gelen isteklerin sadece RapidAPI üzerinden gelmesini zorunlu kılar.
-func RapidAPIAuthMiddleware(next http.Handler) http.Handler {
+// GatewayAuthMiddleware validates requests from authorized API gateways (RapidAPI and Zyla API Hub).
+func GatewayAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		expectedSecret := os.Getenv("RAPIDAPI_PROXY_SECRET")
+		rapidAPISecret := os.Getenv("RAPIDAPI_PROXY_SECRET")
+		zylaSecret := os.Getenv("ZYLA_PROXY_SECRET")
 		
-		// Eğer ortamda şifre yoksa (lokal test ortamı), direkt içeri al.
-		if expectedSecret == "" {
+		// Bypass validation for local development environments when no secrets are provided
+		if rapidAPISecret == "" && zylaSecret == "" {
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		// İstekteki şifre ile ortamdaki şifre eşleşmiyorsa 403 yapıştır.
-		clientSecret := r.Header.Get("X-RapidAPI-Proxy-Secret")
-		if clientSecret != expectedSecret {
+		clientRapidSecret := r.Header.Get("X-RapidAPI-Proxy-Secret")
+		clientZylaSecret := r.Header.Get("X-Zyla-Proxy-Secret")
+
+		// Validate incoming headers against environment variables
+		validRapid := rapidAPISecret != "" && clientRapidSecret == rapidAPISecret
+		validZyla := zylaSecret != "" && clientZylaSecret == zylaSecret
+
+		// Deny access if neither gateway provides a valid proxy secret
+		if !validRapid && !validZyla {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte(`{"error": "Forbidden: Sadece yetkili RapidAPI proxy'si erisebilir."}`))
+			w.Write([]byte(`{"error": "Forbidden: Unauthorized gateway access detected."}`))
 			return
 		}
 

@@ -1,0 +1,73 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Fraudox OSINT API",
+    "description": "Enterprise-grade fraud detection and OSINT scoring engine. Analyzes given Email and IP addresses simultaneously across 5 distinct modules: Typo-squatting, DNS Configuration, Social Footprint (Gravatar), Port Scanning (VPN/Proxy detection), and Disposable Email databases. Returns a precise risk score from 0-100 with actionable verdicts.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://fraudox-api.onrender.com"
+    }
+  ],
+  "paths": {
+    "/api/v1/analyze": {
+      "post": {
+        "summary": "Analyze Email and IP",
+        "description": "Calculates the total risk score and verdict based on parallel OSINT module scans.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": "test@gmaill.com",
+                    "description": "Target email address for typo-squatting, DNS, social footprint, and disposable checks."
+                  },
+                  "ip": {
+                    "type": "string",
+                    "example": "8.8.8.8",
+                    "description": "Target IP address for open port scanning (VPN, Proxy, Tor nodes)."
+                  }
+                },
+                "required": ["email", "ip"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Analysis Output",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "example": {
+                    "email": "test@gmaill.com",
+                    "ip": "8.8.8.8",
+                    "risk_score": 80,
+                    "verdict": "BLOCK",
+                    "partial_result": false,
+                    "processing_time_ms": 500
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid payload"
+          },
+          "403": {
+            "description": "Forbidden - Missing or invalid RapidAPI proxy secret"
+          },
+          "429": {
+            "description": "Too Many Requests - Rate limit exceeded"
+          }
+        }
+      }
+    }
+  }
+}
